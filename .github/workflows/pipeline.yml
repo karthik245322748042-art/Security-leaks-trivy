@@ -42,17 +42,16 @@ jobs:
         continue-on-error: true
 
     #5th code
-      - name: Scan image with Trivy
+      - name: Scan Docker image with Trivy
         id: trivy
-        run: |
-          docker run --rm \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            aquasec/trivy:latest image \
-            --severity HIGH,CRITICAL \
-            --exit-code 1 \
-            karthikeya-app
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: karthikeya-app
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
         continue-on-error: true
-
+        
     #6th code
       - name: Docker tag
         if: steps.trivy.outcome == 'success'
