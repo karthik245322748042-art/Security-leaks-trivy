@@ -50,7 +50,7 @@ jobs:
         id: trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: karthikeya-app
+          image-ref: karthikeya-app:latest
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
@@ -60,8 +60,8 @@ jobs:
       - name: Docker tag
         if: steps.trivy.outcome == 'success'
         run: |
-          docker tag karthikeya-app ${{ env.IMAGE_NAME }}:latest
-          docker tag karthikeya-app ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker tag karthikeya-app:latest ${{ env.IMAGE_NAME }}:latest
+          docker tag karthikeya-app:latest ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
     #7th code
       - name: Docker push
