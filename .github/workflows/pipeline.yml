@@ -38,13 +38,11 @@ jobs:
     #4th code 
       - name: Build Docker image
         id: build
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          load: true
-          push: false
-          tags: karthikeya-app:latest
+        run: |
+          docker build -t karthikeya-app:latest .
+          docker images
         continue-on-error: true
+
     #5th code
       - name: Scan Docker image with Trivy
         id: trivy
@@ -54,6 +52,7 @@ jobs:
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
+          docker-host: unix:///var/run/docker.sock
         continue-on-error: true
         
     #6th code
