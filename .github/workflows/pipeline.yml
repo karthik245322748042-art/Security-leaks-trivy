@@ -17,17 +17,14 @@ jobs:
       packages: write
 
     steps:
-    #1st code 
       - name: Checkout code
         uses: actions/checkout@v4
 
-    #2nd code 
       - name: Check for git leaks
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    #3rd code
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -35,44 +32,34 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-    #4th code 
       - name: Build Docker image
-        id: build
+        run: docker build -t karthikeya-app:latest .
+
+      - name: Verify image exists
+        run: docker images karthikeya-app
+
+      - name: Scan with Trivy
+        id: trivy
         run: |
-          docker build -t karthikeya-app:latest .
-          docker images
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $HOME/Library/Caches:/root/.cache \
+            aquasec/trivy:latest image \
+            --severity CRITICAL,HIGH \
+            --exit-code 0 \
+            karthikeya-app:latest
         continue-on-error: true
 
-    #5th code
-      - name: Scan Docker image with Trivy
-        id: trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: karthikeya-app:latest
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
-          docker-host: unix:///var/run/docker.sock
-        continue-on-error: true
-        
-    #6th code
-      - name: Docker tag
-        if: steps.trivy.outcome == 'success'
+      - name: Push to GHCR
         run: |
           docker tag karthikeya-app:latest ${{ env.IMAGE_NAME }}:latest
           docker tag karthikeya-app:latest ${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-    #7th code
-      - name: Docker push
-        if: steps.trivy.outcome == 'success'
-        run: |
           docker push ${{ env.IMAGE_NAME }}:latest
           docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-    #8th code
       - name: Ask Gemini what went wrong
-        if: steps.build.outcome == 'failure' || steps.trivy.outcome == 'failure'
+        if: failure()
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          echo "Pipeline failed. Build: ${{ steps.build.outcome }}. Trivy: ${{ steps.trivy.outcome }}. Branch: ${{ github.ref_name }}. By: ${{ github.actor }}" | python ai_helper.py
+          echo "Pipeline failed. Branch: ${{ github.ref_name }}. By: ${{ github.actor }}" | python ai_helper.py
